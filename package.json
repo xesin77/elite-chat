@@ -1,0 +1,16 @@
+{
+  "name": "elite-chat",
+  "version": "1.0.0",
+  "description": "4人精英群聊系统 - 集成DeepSeek大模型 + Supabase多端同步",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}

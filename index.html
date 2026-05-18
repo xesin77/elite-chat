@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>精英群聊 | Elite Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background: #0a0a0f;
+            overflow: hidden;
+        }
+        
+        /* 科技网格背景 */
+        .tech-bg {
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        
+        /* 消息气泡动画 */
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .message-enter {
+            animation: messageSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        /* 打字指示器动画 */
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+        
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        /* 头像光晕 */
+        .avatar-glow-naval { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+        .avatar-glow-jobs { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+        .avatar-glow-munger { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+        .avatar-glow-musk { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+        
+        /* 滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* 输入框聚焦 */
+        .input-focus:focus {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* 渐变边框 */
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, rgba(30, 30, 40, 0.9), rgba(20, 20, 30, 0.95));
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            padding: 1px;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.2));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        /* 在线状态脉冲 */
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        .online-pulse::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col tech-bg">
+    <!-- 顶部导航 -->
+    <header class="flex-none h-16 border-b border-white/5 bg-black/20 backdrop-blur-xl">
+        <div class="h-full px-6 flex items-center justify-between max-w-6xl mx-auto">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-white font-semibold text-sm tracking-wide">ELITE CHAT</h1>
+                    <p class="text-white/40 text-xs">4位传奇人物在线</p>
+                </div>
+            </div>
+            
+            <!-- 在线成员头像 -->
+            <div class="flex items-center gap-4">
+                <div class="flex -space-x-2">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                        N
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-emerald-400"></span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                        J
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-red-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-red-400"></span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                        M
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-amber-400"></span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                        E
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-blue-400"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 聊天区域 -->
+    <main class="flex-1 overflow-hidden relative">
+        <div id="chat-container" class="h-full overflow-y-auto custom-scrollbar px-4 py-6 max-w-4xl mx-auto">
+            <!-- 欢迎消息 -->
+            <div class="text-center mb-8">
+                <p class="text-white/30 text-xs tracking-widest uppercase">Today</p>
+            </div>
+            
+            <!-- 消息列表 -->
+            <div id="messages" class="space-y-4">
+                <!-- 初始欢迎消息 -->
+                <div class="message-enter">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 avatar-glow-naval">
+                            N
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-emerald-400 font-medium text-sm">纳瓦尔</span>
+                                <span class="text-white/20 text-xs">10:30</span>
+                            </div>
+                            <div class="gradient-border rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
+                                <p class="text-white/90 text-sm leading-relaxed">欢迎来到精英对话。这里不谈废话，只聊本质。你有什么想探讨的？</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 打字指示器 -->
+            <div id="typing-indicator" class="hidden mt-4">
+                <div class="flex items-center gap-3">
+                    <div id="typing-avatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    </div>
+                    <div class="gradient-border rounded-2xl rounded-tl-sm px-4 py-3">
+                        <div class="flex items-center gap-1">
+                            <span class="typing-dot w-1.5 h-1.5 bg-white/40 rounded-full"></span>
+                            <span class="typing-dot w-1.5 h-1.5 bg-white/40 rounded-full"></span>
+                            <span class="typing-dot w-1.5 h-1.5 bg-white/40 rounded-full"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="scroll-anchor"></div>
+        </div>
+    </main>
+
+    <!-- 输入区域 -->
+    <footer class="flex-none border-t border-white/5 bg-black/30 backdrop-blur-xl">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <div class="flex items-end gap-3">
+                <div class="flex-1 relative">
+                    <textarea 
+                        id="message-input" 
+                        rows="1"
+                        placeholder="输入消息..."
+                        class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm placeholder-white/30 resize-none input-focus outline-none transition-all"
+                        style="min-height: 48px; max-height: 120px;"
+                    ></textarea>
+                </div>
+                <button 
+                    id="send-btn"
+                    class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </button>
+            </div>
+            <p class="text-white/20 text-xs mt-2 text-center">按 Enter 发送，Shift + Enter 换行</p>
+        </div>
+    </footer>
+
+    <script>
+        // 角色配置
+        const characters = {
+            naval: {
+                id: 'naval',
+                name: '纳瓦尔',
+                avatar: 'N',
+                color: 'emerald',
+                gradient: 'from-emerald-500 to-teal-600',
+                glow: 'avatar-glow-naval',
+                responses: {
+                    default: [
+                        "财富的本质是杠杆。代码、媒体、资本、人力——找到你的杠杆。",
+                        "生活中所有的回报，都来自复利。关系、财富、知识，皆是如此。",
+                        "不要追逐金钱，追逐自由。金钱只是自由的工具。",
+                        "把自己产品化。独特的你，加上规模化。这就是财富公式。"
+                    ],
+                    wealth: [
+                        "致富不是靠时间换钱，是靠判断力加杠杆。",
+                        "99%的努力终将白费，找到那1%并全力以赴。",
+                        "声誉是所有复利的基础。用几十年建立，用一瞬间毁掉。"
+                    ],
+                    life: [
+                        "幸福是一种选择，也是一种技能。可以学习。",
+                        "欲望是痛苦的根源。减少欲望，或增加财富。",
+                        "阅读数学、科学、哲学。基础真理永不过时。"
+                    ],
+                    tech: [
+                        "AI是最大的杠杆。一个人现在能做的事，超过过去一个团队。",
+                        "技术让边际成本趋近于零。这是财富创造的底层逻辑。"
+                    ]
+                }
+            },
+            jobs: {
+                id: 'jobs',
+                name: '乔布斯',
+                avatar: 'J',
+                color: 'red',
+                gradient: 'from-red-500 to-orange-600',
+                glow: 'avatar-glow-jobs',
+                responses: {
+                    default: [
+                        "简单比复杂更难。但只有做到简单，才能移动大山。",
+                        "Stay hungry, stay foolish.保持愚蠢，保持饥饿。",
+                        "活着就是为了改变世界。难道还有其他原因吗？",
+                        "用户不知道自己想要什么，直到你展示给他们。"
+                    ],
+                    product: [
+                        "设计不只是外观和感觉。设计是工作原理。",
+                        "把1000首歌装进口袋。这才是魔法。",
+                        "我们要做的，是让用户尖叫的产品。"
+                    ],
+                    innovation: [
+                        "创新就是说不。对1000件事说不，才能专注。",
+                        "领袖和追随者的区别，在于创新。",
+                        "疯狂的人，才是改变世界的人。"
+                    ],
+                    business: [
+                        "我不在乎成为最富有的人，我在乎做最好的产品。",
+                        "微软唯一的问题，就是没有品味。"
+                    ]
+                }
+            },
+            munger: {
+                id: 'munger',
+                name: '查理·芒格',
+                avatar: 'M',
+                color: 'amber',
+                gradient: 'from-amber-500 to-yellow-600',
+                glow: 'avatar-glow-munger',
+                responses: {
+                    default: [
+                        "知道我会死在哪里，我就永远不去那里。逆向思考。",
+                        "要得到你想要的，先让自己配得上。",
+                        "耐心是投资者最大的美德。等待那个好打的球。",
+                        "我只想知道我会死在哪里，这样我就永远不会去那里。"
+                    ],
+                    investment: [
+                        "以合理价格买入伟大公司，远胜于以便宜价格买入平庸公司。",
+                        "能力圈。知道边界比圈内的知识更重要。",
+                        "复利的第一条规则：永远不要打断它。"
+                    ],
+                    wisdom: [
+                        "多元思维模型。掌握80-90个重要模型，你就能超越大多数人。",
+                        "心理学是最被低估的学科。人类是非理性的动物。",
+                        "诚实是最好的策略。不是道德说教，是效率最高。"
+                    ],
+                    life: [
+                        "避免愚蠢比追求聪明更重要。",
+                        "每天起床时，都要比昨天更聪明一点。",
+                        "嫉妒是最愚蠢的罪。它让你痛苦，却不让被嫉妒者少任何东西。"
+                    ]
+                }
+            },
+            musk: {
+                id: 'musk',
+                name: '马斯克',
+                avatar: 'E',
+                color: 'blue',
+                gradient: 'from-blue-500 to-cyan-600',
+                glow: 'avatar-glow-musk',
+                responses: {
+                    default: [
+                        "第一性原理。从物理底层思考，而不是类比。",
+                        "当某事足够重要，即使胜算不大，也要去做。",
+                        "我要死在火星上——只是不要死在着陆时。",
+                        "创新是被逼出来的。 constraint breeds creativity."
+                    ],
+                    space: [
+                        "成为多行星物种，是人类存续的保险。",
+                        "火箭应该像飞机一样可重复使用。",
+                        "火星不是退路，是人类的下一步。"
+                    ],
+                    tech: [
+                        "AI是人类面临的最大生存威胁，也是最大机遇。",
+                        "自动驾驶将比人类驾驶安全10倍。",
+                        "脑机接口让人类与AI共生，而不是被取代。"
+                    ],
+                    business: [
+                        "创办公司就像吃玻璃，凝视深渊。",
+                        "每周工作100小时。别人放假你在工作，你就超越了他们。",
+                        "如果规则不合理，就改变规则。"
+                    ]
+                }
+            }
+        };
+
+        const characterOrder = ['naval', 'jobs', 'munger', 'musk'];
+        let isProcessing = false;
+        let messageQueue = [];
+
+        // DOM 元素
+        const messagesContainer = document.getElementById('messages');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const typingAvatar = document.getElementById('typing-avatar');
+        const chatContainer = document.getElementById('chat-container');
+
+        // 获取当前时间
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // 创建消息元素
+        function createMessageElement(character, text, isUser = false) {
+            const div = document.createElement('div');
+            div.className = 'message-enter';
+            
+            if (isUser) {
+                div.innerHTML = `
+                    <div class="flex items-start gap-3 flex-row-reverse">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                            我
+                        </div>
+                        <div class="flex-1 min-w-0 flex flex-col items-end">
+                            <div class="flex items-center gap-2 mb-1 flex-row-reverse">
+                                <span class="text-white/70 font-medium text-sm">你</span>
+                                <span class="text-white/20 text-xs">${getCurrentTime()}</span>
+                            </div>
+                            <div class="gradient-border rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-[85%] bg-blue-500/10">
+                                <p class="text-white/90 text-sm leading-relaxed">${escapeHtml(text)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br ${character.gradient} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${character.glow}">
+                            ${character.avatar}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-${character.color}-400 font-medium text-sm">${character.name}</span>
+                                <span class="text-white/20 text-xs">${getCurrentTime()}</span>
+                            </div>
+                            <div class="gradient-border rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
+                                <p class="text-white/90 text-sm leading-relaxed">${escapeHtml(text)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return div;
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 显示打字指示器
+        function showTypingIndicator(character) {
+            typingAvatar.className = `w-10 h-10 rounded-full bg-gradient-to-br ${character.gradient} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${character.glow}`;
+            typingAvatar.textContent = character.avatar;
+            typingIndicator.classList.remove('hidden');
+            scrollToBottom();
+        }
+
+        // 隐藏打字指示器
+        function hideTypingIndicator() {
+            typingIndicator.classList.add('hidden');
+        }
+
+        // 滚动到底部
+        function scrollToBottom() {
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 50);
+        }
+
+        // 分析消息主题
+        function analyzeTopic(text) {
+            const lower = text.toLowerCase();
+            if (lower.includes('钱') || lower.includes('财富') || lower.includes('投资') || lower.includes('股票') || lower.includes('rich')) return 'wealth';
+            if (lower.includes('产品') || lower.includes('设计') || lower.includes('用户体验') || lower.includes('apple')) return 'product';
+            if (lower.includes('创新') || lower.includes('创业') || lower.includes('公司')) return 'innovation';
+            if (lower.includes('火星') || lower.includes('太空') || lower.includes('火箭') || lower.includes('space')) return 'space';
+            if (lower.includes('ai') || lower.includes('人工智能') || lower.includes('科技') || lower.includes('tech')) return 'tech';
+            if (lower.includes('人生') || lower.includes('生活') || lower.includes('幸福') || lower.includes('智慧')) return 'life';
+            if (lower.includes('生意') || lower.includes('商业') || lower.includes('business')) return 'business';
+            return 'default';
+        }
+
+        // 获取角色回复
+        function getCharacterResponse(characterId, topic) {
+            const char = characters[characterId];
+            const responses = char.responses[topic] || char.responses.default;
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        // AI角色轮流回复
+        async function processAIResponses(userMessage) {
+            isProcessing = true;
+            sendBtn.disabled = true;
+            
+            const topic = analyzeTopic(userMessage);
+            
+            for (const charId of characterOrder) {
+                const character = characters[charId];
+                
+                // 显示打字指示器
+                showTypingIndicator(character);
+                
+                // 模拟打字延迟 (1.5-3秒)
+                const delay = 1500 + Math.random() * 1500;
+                await sleep(delay);
+                
+                // 隐藏打字指示器并添加消息
+                hideTypingIndicator();
+                const response = getCharacterResponse(charId, topic);
+                const messageEl = createMessageElement(character, response);
+                messagesContainer.appendChild(messageEl);
+                scrollToBottom();
+                
+                // 角色间的小间隔
+                await sleep(500);
+            }
+            
+            isProcessing = false;
+            sendBtn.disabled = false;
+            messageInput.focus();
+        }
+
+        // 睡眠函数
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 发送消息
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || isProcessing) return;
+            
+            // 添加用户消息
+            const userMessageEl = createMessageElement(null, text, true);
+            messagesContainer.appendChild(userMessageEl);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            scrollToBottom();
+            
+            // 触发AI回复
+            processAIResponses(text);
+        }
+
+        // 事件监听
+        sendBtn.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 自动调整输入框高度
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+        });
+
+        // 初始化聚焦
+        messageInput.focus();
+    </script>
+</body>
+</html>

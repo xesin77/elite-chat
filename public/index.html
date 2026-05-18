@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>精英群聊 | Elite Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background: #0a0a0f;
+            overflow: hidden;
+        }
+        
+        /* 科技网格背景 */
+        .tech-bg {
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        
+        /* 消息气泡动画 */
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .message-enter {
+            animation: messageSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        /* 打字指示器动画 */
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+        
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        /* 头像光晕 */
+        .avatar-glow-naval { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+        .avatar-glow-jobs { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+        .avatar-glow-munger { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+        .avatar-glow-musk { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+        
+        /* 滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* 输入框聚焦 */
+        .input-focus:focus {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* 渐变边框 */
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, rgba(30, 30, 40, 0.9), rgba(20, 20, 30, 0.95));
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            padding: 1px;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.2));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        /* 在线状态脉冲 */
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        .online-pulse::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        
+        /* 错误提示 */
+        .error-toast {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* 清空历史按钮悬停 */
+        .clear-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: rgba(239, 68, 68, 0.9);
+        }
+
+        /* 同步状态指示器 */
+        .sync-indicator {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col tech-bg">
+    <!-- 错误提示 -->
+    <div id="error-toast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 error-toast">
+        <div class="bg-red-500/90 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
+            <span id="error-message"></span>
+        </div>
+    </div>
+
+    <!-- 顶部导航 -->
+    <header class="flex-none h-16 border-b border-white/5 bg-black/20 backdrop-blur-xl">
+        <div class="h-full px-6 flex items-center justify-between max-w-6xl mx-auto">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-white font-semibold text-sm tracking-wide">ELITE CHAT</h1>
+                    <p class="text-white/40 text-xs">4位传奇人物在线 · DeepSeek驱动 · <span class="text-blue-400">v2.0.0-deepseek-only</span></p>
+                </div>
+            </div>
+            
+            <!-- API状态指示 + 清空历史按钮 -->
+            <div class="flex items-center gap-4">
+                <!-- 同步状态 -->
+                <div id="sync-status" class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-400 sync-indicator"></span>
+                    <span class="text-white/40 text-xs">云端同步中</span>
+                </div>
+                <button 
+                    id="clear-history-btn"
+                    class="clear-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/40 text-xs transition-all border border-white/10 hover:border-red-500/30"
+                    title="清空对话历史"
+                >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    清空历史
+                </button>
+                <div id="api-status" class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-white/40 text-xs">API已连接</span>
+                </div>
+                <div class="flex -space-x-2">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                        N
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-emerald-400"></span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                        J
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-red-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-red-400"></span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                        M
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-amber-400"></span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                        E
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-blue-400"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 聊天区域 -->
+    <main class="flex-1 overflow-hidden relative">
+        <div id="chat-container" class="h-full overflow-y-auto custom-scrollbar px-4 py-6 max-w-4xl mx-auto">
+            <!-- 欢迎消息 -->
+            <div class="text-center mb-8">
+                <p class="text-white/30 text-xs tracking-widest uppercase">Today</p>
+            </div>
+            
+            <!-- 消息列表 -->
+            <div id="messages" class="space-y-4">
+                <!-- 历史消息将在这里加载 -->
+            </div>
+            
+            <!-- 打字指示器 -->
+            <div id="typing-indicator" class="hidden mt-4">
+                <div class="flex items-center gap-3">
+                    <div id="typing-avatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    </div>
+                    <div class="gradient-border rounded-2xl rounded-tl-sm px-4 py-3">
+                        <div class="flex items-center gap-1">
+                            <span class="typing-dot w-1.5 h-1.5 bg-white/40 rounded-full"></span>
+                            <span class="typing-dot w-1.5 h-1.5 bg-white/40 rounded-full"></span>
+                            <span class="typing-dot w-1.5 h-1.5 bg-white/40 rounded-full"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="scroll-anchor"></div>
+        </div>
+    </main>
+
+    <!-- 输入区域 -->
+    <footer class="flex-none border-t border-white/5 bg-black/30 backdrop-blur-xl">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <div class="flex items-end gap-3">
+                <div class="flex-1 relative">
+                    <textarea 
+                        id="message-input" 
+                        rows="1"
+                        placeholder="输入你的问题，4位精英将为你分析..."
+                        class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm placeholder-white/30 resize-none input-focus outline-none transition-all"
+                        style="min-height: 48px; max-height: 120px;"
+                    ></textarea>
+                </div>
+                <button 
+                    id="send-btn"
+                    class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </button>
+            </div>
+            <p class="text-white/20 text-xs mt-2 text-center">按 Enter 发送，Shift + Enter 换行</p>
+        </div>
+    </footer>
+
+    <script>
+        // ==================== Supabase 配置 ====================
+        const SUPABASE_URL = 'https://ugokaucyfusjvodfbnsr.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_5xgGweTmb2qrm5uddy3sFQ_eeDBY2aK';
+        
+        // 初始化 Supabase 客户端
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // 角色配置
+        const characters = {
+            naval: {
+                id: 'naval',
+                name: '纳瓦尔',
+                avatar: 'N',
+                color: 'emerald',
+                gradient: 'from-emerald-500 to-teal-600',
+                glow: 'avatar-glow-naval'
+            },
+            jobs: {
+                id: 'jobs',
+                name: '乔布斯',
+                avatar: 'J',
+                color: 'red',
+                gradient: 'from-red-500 to-orange-600',
+                glow: 'avatar-glow-jobs'
+            },
+            munger: {
+                id: 'munger',
+                name: '查理·芒格',
+                avatar: 'M',
+                color: 'amber',
+                gradient: 'from-amber-500 to-yellow-600',
+                glow: 'avatar-glow-munger'
+            },
+            musk: {
+                id: 'musk',
+                name: '马斯克',
+                avatar: 'E',
+                color: 'blue',
+                gradient: 'from-blue-500 to-cyan-600',
+                glow: 'avatar-glow-musk'
+            }
+        };
+
+        const characterOrder = ['naval', 'jobs', 'munger', 'musk'];
+        let isProcessing = false;
+        let realtimeSubscription = null;
+
+        // localStorage 键名
+        const SESSION_KEY = 'elite_chat_session_id';
+
+        // DOM 元素
+        const messagesContainer = document.getElementById('messages');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const typingAvatar = document.getElementById('typing-avatar');
+        const chatContainer = document.getElementById('chat-container');
+        const errorToast = document.getElementById('error-toast');
+        const errorMessage = document.getElementById('error-message');
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
+        const syncStatus = document.getElementById('sync-status');
+
+        // ==================== 会话管理 ====================
+
+        // 获取或创建会话ID
+        function getSessionId() {
+            let sessionId = localStorage.getItem(SESSION_KEY);
+            if (!sessionId) {
+                sessionId = 'session_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem(SESSION_KEY, sessionId);
+            }
+            return sessionId;
+        }
+
+        const sessionId = getSessionId();
+
+        // ==================== Supabase 操作 ====================
+
+        // 保存消息到 Supabase
+        async function saveMessageToSupabase(messageData) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('messages')
+                    .insert([{
+                        session_id: sessionId,
+                        is_user: messageData.is_user,
+                        character_id: messageData.character_id || null,
+                        text: messageData.text,
+                        created_at: new Date().toISOString()
+                    }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return { success: true, data };
+            } catch (error) {
+                console.error('保存消息失败:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // 从 Supabase 加载历史消息
+        async function loadMessagesFromSupabase() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('messages')
+                    .select('*')
+                    .eq('session_id', sessionId)
+                    .order('created_at', { ascending: true })
+                    .limit(100);
+
+                if (error) throw error;
+                return { success: true, data: data || [] };
+            } catch (error) {
+                console.error('加载消息失败:', error);
+                return { success: false, error: error.message, data: [] };
+            }
+        }
+
+        // 清空 Supabase 消息
+        async function clearMessagesFromSupabase() {
+            try {
+                const { error } = await supabaseClient
+                    .from('messages')
+                    .delete()
+                    .eq('session_id', sessionId);
+
+                if (error) throw error;
+                return { success: true };
+            } catch (error) {
+                console.error('清空消息失败:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // 订阅实时消息
+        function subscribeToRealtimeMessages() {
+            const subscription = supabaseClient
+                .channel(`messages:${sessionId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: `session_id=eq.${sessionId}`
+                    },
+                    (payload) => {
+                        const newMessage = payload.new;
+                        // 检查消息是否已存在（避免重复渲染）
+                        const existingMsg = document.querySelector(`[data-message-id="${newMessage.id}"]`);
+                        if (!existingMsg) {
+                            renderMessageFromSupabase(newMessage);
+                            scrollToBottom();
+                        }
+                    }
+                )
+                .subscribe();
+
+            return subscription;
+        }
+
+        // ==================== 消息渲染 ====================
+
+        // 显示错误提示
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorToast.classList.remove('hidden');
+            setTimeout(() => {
+                errorToast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 获取当前时间
+        function getCurrentTime(date = new Date()) {
+            return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // 添加欢迎消息
+        function addWelcomeMessage() {
+            const welcomeDiv = document.createElement('div');
+            welcomeDiv.className = 'message-enter';
+            welcomeDiv.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 avatar-glow-naval">
+                        N
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-emerald-400 font-medium text-sm">纳瓦尔</span>
+                            <span class="text-white/20 text-xs">${getCurrentTime()}</span>
+                        </div>
+                        <div class="gradient-border rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
+                            <p class="text-white/90 text-sm leading-relaxed">欢迎来到精英对话。我是纳瓦尔，这里还有乔布斯、芒格和马斯克。我们各有所长，但都追求本质。你有什么困惑想探讨？</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(welcomeDiv);
+        }
+
+        // 从 Supabase 渲染消息
+        function renderMessageFromSupabase(msgData) {
+            const div = document.createElement('div');
+            div.className = 'message-enter';
+            div.setAttribute('data-message-id', msgData.id);
+            
+            const time = getCurrentTime(new Date(msgData.created_at));
+            
+            if (msgData.is_user) {
+                div.innerHTML = `
+                    <div class="flex items-start gap-3 flex-row-reverse">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                            我
+                        </div>
+                        <div class="flex-1 min-w-0 flex flex-col items-end">
+                            <div class="flex items-center gap-2 mb-1 flex-row-reverse">
+                                <span class="text-white/70 font-medium text-sm">你</span>
+                                <span class="text-white/20 text-xs">${time}</span>
+                            </div>
+                            <div class="gradient-border rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-[85%] bg-blue-500/10">
+                                <p class="text-white/90 text-sm leading-relaxed">${escapeHtml(msgData.text)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const character = characters[msgData.character_id];
+                if (!character) return;
+                
+                div.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br ${character.gradient} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${character.glow}">
+                            ${character.avatar}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-${character.color}-400 font-medium text-sm">${character.name}</span>
+                                <span class="text-white/20 text-xs">${time}</span>
+                            </div>
+                            <div class="gradient-border rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
+                                <p class="text-white/90 text-sm leading-relaxed">${escapeHtml(msgData.text)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            messagesContainer.appendChild(div);
+        }
+
+        // 加载并显示历史记录
+        async function loadAndDisplayHistory() {
+            const result = await loadMessagesFromSupabase();
+            
+            if (result.success && result.data.length > 0) {
+                result.data.forEach(msgData => {
+                    renderMessageFromSupabase(msgData);
+                });
+                scrollToBottom();
+            } else {
+                // 没有历史记录，显示欢迎消息
+                addWelcomeMessage();
+            }
+        }
+
+        // 创建新消息元素（用于实时聊天）
+        async function createMessageElement(character, text, isUser = false) {
+            const div = document.createElement('div');
+            div.className = 'message-enter';
+            
+            const now = new Date();
+            
+            if (isUser) {
+                div.innerHTML = `
+                    <div class="flex items-start gap-3 flex-row-reverse">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                            我
+                        </div>
+                        <div class="flex-1 min-w-0 flex flex-col items-end">
+                            <div class="flex items-center gap-2 mb-1 flex-row-reverse">
+                                <span class="text-white/70 font-medium text-sm">你</span>
+                                <span class="text-white/20 text-xs">${getCurrentTime(now)}</span>
+                            </div>
+                            <div class="gradient-border rounded-2xl rounded-tr-sm px-4 py-3 inline-block max-w-[85%] bg-blue-500/10">
+                                <p class="text-white/90 text-sm leading-relaxed">${escapeHtml(text)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                // 保存用户消息到 Supabase
+                await saveMessageToSupabase({
+                    is_user: true,
+                    text: text
+                });
+            } else {
+                div.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br ${character.gradient} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${character.glow}">
+                            ${character.avatar}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-${character.color}-400 font-medium text-sm">${character.name}</span>
+                                <span class="text-white/20 text-xs">${getCurrentTime(now)}</span>
+                            </div>
+                            <div class="gradient-border rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[85%]">
+                                <p class="text-white/90 text-sm leading-relaxed">${escapeHtml(text)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                // 保存AI消息到 Supabase
+                await saveMessageToSupabase({
+                    is_user: false,
+                    character_id: character.id,
+                    text: text
+                });
+            }
+            
+            return div;
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 显示打字指示器
+        function showTypingIndicator(character) {
+            typingAvatar.className = `w-10 h-10 rounded-full bg-gradient-to-br ${character.gradient} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${character.glow}`;
+            typingAvatar.textContent = character.avatar;
+            typingIndicator.classList.remove('hidden');
+            scrollToBottom();
+        }
+
+        // 隐藏打字指示器
+        function hideTypingIndicator() {
+            typingIndicator.classList.add('hidden');
+        }
+
+        // 滚动到底部
+        function scrollToBottom() {
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 50);
+        }
+
+        // 调用后端API获取角色回复
+        async function fetchCharacterResponse(characterId, userMessage, previousResponses) {
+            try {
+                const response = await fetch(`/api/chat/stream/${characterId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: userMessage,
+                        previousResponses: previousResponses,
+                        session_id: sessionId
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'API请求失败');
+                }
+
+                const data = await response.json();
+                return data.response;
+            } catch (error) {
+                console.error('API错误:', error);
+                throw error;
+            }
+        }
+
+        // AI角色轮流回复
+        async function processAIResponses(userMessage) {
+            isProcessing = true;
+            sendBtn.disabled = true;
+            
+            const previousResponses = [];
+            
+            for (const charId of characterOrder) {
+                const character = characters[charId];
+                
+                // 显示打字指示器
+                showTypingIndicator(character);
+                
+                try {
+                    // 调用API获取回复（后端会保存到Supabase，实时订阅会自动渲染）
+                    const response = await fetchCharacterResponse(charId, userMessage, previousResponses);
+                    
+                    // 隐藏打字指示器
+                    hideTypingIndicator();
+                    
+                    // 注意：不再在前端保存AI回复，因为后端已经保存了
+                    // 实时订阅会自动渲染新消息
+                    
+                    // 保存回复供下一个角色参考
+                    previousResponses.push({
+                        name: character.name,
+                        response: response
+                    });
+                    
+                } catch (error) {
+                    hideTypingIndicator();
+                    showError(`${character.name}回复失败: ${error.message}`);
+                }
+                
+                // 角色间的小间隔
+                await sleep(300);
+            }
+            
+            isProcessing = false;
+            sendBtn.disabled = false;
+            messageInput.focus();
+        }
+
+        // 睡眠函数
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 发送消息
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || isProcessing) return;
+            
+            // 保存用户消息到 Supabase（实时订阅会自动渲染）
+            await saveMessageToSupabase({
+                is_user: true,
+                text: text
+            });
+            
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            scrollToBottom();
+            
+            // 触发AI回复
+            processAIResponses(text);
+        }
+
+        // 事件监听
+        sendBtn.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 自动调整输入框高度
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+        });
+
+        // 清空历史按钮事件
+        clearHistoryBtn.addEventListener('click', async () => {
+            if (confirm('确定要清空所有对话历史吗？此操作不可恢复。')) {
+                const result = await clearMessagesFromSupabase();
+                if (result.success) {
+                    messagesContainer.innerHTML = '';
+                    addWelcomeMessage();
+                    showError('历史记录已清空');
+                } else {
+                    showError('清空失败: ' + result.error);
+                }
+            }
+        });
+
+        // 检查API状态
+        async function checkApiStatus() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                // 显示版本号
+                if (data.version) {
+                    document.getElementById('app-version').textContent = data.version;
+                }
+                
+                const statusEl = document.getElementById('api-status');
+                if (data.hasDeepseekKey) {
+                    statusEl.innerHTML = `
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-white/40 text-xs">API已连接</span>
+                    `;
+                } else {
+                    statusEl.innerHTML = `
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span class="text-white/40 text-xs">未配置API密钥</span>
+                    `;
+                }
+
+                // 更新同步状态
+                if (data.supabaseConnected) {
+                    syncStatus.innerHTML = `
+                        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                        <span class="text-white/40 text-xs">云端同步中</span>
+                    `;
+                } else {
+                    syncStatus.innerHTML = `
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span class="text-white/40 text-xs">同步未连接</span>
+                    `;
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('api-status');
+                statusEl.innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-red-400"></span>
+                    <span class="text-white/40 text-xs">服务器离线</span>
+                `;
+            }
+        }
+
+        // 初始化
+        checkApiStatus();
+        loadAndDisplayHistory();
+        realtimeSubscription = subscribeToRealtimeMessages();
+        messageInput.focus();
+
+        // 页面卸载时取消订阅
+        window.addEventListener('beforeunload', () => {
+            if (realtimeSubscription) {
+                realtimeSubscription.unsubscribe();
+            }
+        });
+    </script>
+</body>
+</html>

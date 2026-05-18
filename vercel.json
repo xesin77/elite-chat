@@ -8,13 +8,36 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*\\.html)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*\\.css)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*\\.js)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*\\.png)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*\\.jpg)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*\\.svg)",
+      "dest": "server.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "server.js"
     }
-  ],
-  "env": {
-    "DEEPSEEK_API_KEY": "@deepseek_api_key",
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_ANON_KEY": "@supabase_anon_key"
-  }
+  ]
 }

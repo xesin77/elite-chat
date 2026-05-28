@@ -600,6 +600,9 @@
 
         // 加载并显示历史记录
         async function loadAndDisplayHistory() {
+            // 先清空现有消息
+            messagesContainer.innerHTML = '';
+            
             const result = await loadMessagesFromSupabase();
             
             if (result.success && result.data.length > 0) {

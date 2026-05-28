@@ -455,7 +455,6 @@
                     .from('messages')
                     .select('*')
                     .eq('session_id', sessionId)
-                    .is('is_cleared', false)  // 过滤掉已清空的消息
                     .order('created_at', { ascending: true })
                     .limit(100);
 
@@ -470,22 +469,12 @@
         // 清空 Supabase 消息
         async function clearMessagesFromSupabase() {
             try {
-                // 先尝试删除，如果失败则更新为已清空标记
-                const { error: deleteError } = await supabaseClient
+                const { error } = await supabaseClient
                     .from('messages')
                     .delete()
                     .eq('session_id', sessionId);
 
-                if (deleteError) {
-                    console.log('删除失败，尝试更新:', deleteError);
-                    // 如果删除失败，更新所有消息为已清空状态
-                    const { error: updateError } = await supabaseClient
-                        .from('messages')
-                        .update({ text: '[已清空]', is_cleared: true })
-                        .eq('session_id', sessionId);
-                    
-                    if (updateError) throw updateError;
-                }
+                if (error) throw error;
                 return { success: true };
             } catch (error) {
                 console.error('清空消息失败:', error);

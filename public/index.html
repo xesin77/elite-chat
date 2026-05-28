@@ -155,21 +155,35 @@
             border-color: rgba(0,0,0,0.1) !important;
         }
         .light-theme h1,
-        .light-theme p,
-        .light-theme span,
         .light-theme .text-white {
             color: #1e293b !important;
         }
+        .light-theme p,
+        .light-theme span {
+            color: #475569 !important;
+        }
         .light-theme .text-white\/40,
-        .light-theme .text-white\/60 {
+        .light-theme .text-white\/60,
+        .light-theme .text-white\/20,
+        .light-theme .text-white\/70 {
             color: #64748b !important;
         }
-        .light-theme .message-bubble {
-            background: rgba(255,255,255,0.9) !important;
+        /* 消息气泡 */
+        .light-theme .gradient-border {
+            background: rgba(255,255,255,0.95) !important;
+            border: 1px solid rgba(0,0,0,0.08) !important;
+        }
+        .light-theme .gradient-border::before {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.1)) !important;
+        }
+        .light-theme .gradient-border p {
             color: #334155 !important;
         }
-        .light-theme .message-bubble-user {
+        /* 用户消息 */
+        .light-theme .bg-blue-500\/10 {
             background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+        }
+        .light-theme .bg-blue-500\/10 p {
             color: white !important;
         }
         .light-theme input,
@@ -181,6 +195,19 @@
         .light-theme input::placeholder,
         .light-theme textarea::placeholder {
             color: #94a3b8 !important;
+        }
+        /* 角色名字颜色 */
+        .light-theme .text-emerald-400 {
+            color: #059669 !important;
+        }
+        .light-theme .text-red-400 {
+            color: #dc2626 !important;
+        }
+        .light-theme .text-amber-400 {
+            color: #d97706 !important;
+        }
+        .light-theme .text-blue-400 {
+            color: #2563eb !important;
         }
     </style>
 </head>

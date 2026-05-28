@@ -866,8 +866,14 @@
         });
 
         // 初始化
-        loadAndDisplayHistory();
-        realtimeSubscription = subscribeToRealtimeMessages();
+        try {
+            loadAndDisplayHistory();
+            realtimeSubscription = subscribeToRealtimeMessages();
+        } catch (error) {
+            console.error('初始化失败:', error);
+            // 显示欢迎消息作为 fallback
+            addWelcomeMessage();
+        }
         messageInput.focus();
 
         // 页面卸载时取消订阅

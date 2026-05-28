@@ -265,10 +265,7 @@
                     </svg>
                     清空历史
                 </button>
-                <div id="api-status" class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="text-white/40 text-xs">API已连接</span>
-                </div>
+
                 <div class="flex -space-x-2">
                     <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
                         N
@@ -868,53 +865,7 @@
             }
         });
 
-        // 检查API状态
-        async function checkApiStatus() {
-            try {
-                const response = await fetch('/api/health');
-                const data = await response.json();
-                
-                // 显示版本号
-                if (data.version) {
-                    document.getElementById('app-version').textContent = data.version;
-                }
-                
-                const statusEl = document.getElementById('api-status');
-                if (data.hasDeepseekKey) {
-                    statusEl.innerHTML = `
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span class="text-white/40 text-xs">API已连接</span>
-                    `;
-                } else {
-                    statusEl.innerHTML = `
-                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                        <span class="text-white/40 text-xs">未配置API密钥</span>
-                    `;
-                }
-
-                // 更新同步状态
-                if (data.supabaseConnected) {
-                    syncStatus.innerHTML = `
-                        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-                        <span class="text-white/40 text-xs">云端同步中</span>
-                    `;
-                } else {
-                    syncStatus.innerHTML = `
-                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                        <span class="text-white/40 text-xs">同步未连接</span>
-                    `;
-                }
-            } catch (error) {
-                const statusEl = document.getElementById('api-status');
-                statusEl.innerHTML = `
-                    <span class="w-2 h-2 rounded-full bg-red-400"></span>
-                    <span class="text-white/40 text-xs">服务器离线</span>
-                `;
-            }
-        }
-
         // 初始化
-        checkApiStatus();
         loadAndDisplayHistory();
         realtimeSubscription = subscribeToRealtimeMessages();
         messageInput.focus();

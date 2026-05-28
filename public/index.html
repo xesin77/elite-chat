@@ -137,6 +137,51 @@
             0%, 100% { opacity: 1; }
             50% { opacity: .5; }
         }
+        
+        /* 浅色主题 */
+        .light-theme {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+        }
+        .light-theme body,
+        .light-theme .chat-container {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+        }
+        .light-theme .tech-bg {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+        }
+        .light-theme header,
+        .light-theme .input-area {
+            background: rgba(255,255,255,0.8) !important;
+            border-color: rgba(0,0,0,0.1) !important;
+        }
+        .light-theme h1,
+        .light-theme p,
+        .light-theme span,
+        .light-theme .text-white {
+            color: #1e293b !important;
+        }
+        .light-theme .text-white\/40,
+        .light-theme .text-white\/60 {
+            color: #64748b !important;
+        }
+        .light-theme .message-bubble {
+            background: rgba(255,255,255,0.9) !important;
+            color: #334155 !important;
+        }
+        .light-theme .message-bubble-user {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+            color: white !important;
+        }
+        .light-theme input,
+        .light-theme textarea {
+            background: rgba(255,255,255,0.9) !important;
+            color: #1e293b !important;
+            border-color: rgba(0,0,0,0.1) !important;
+        }
+        .light-theme input::placeholder,
+        .light-theme textarea::placeholder {
+            color: #94a3b8 !important;
+        }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col tech-bg">
@@ -169,6 +214,20 @@
                     <span class="w-2 h-2 rounded-full bg-blue-400 sync-indicator"></span>
                     <span class="text-white/40 text-xs">云端同步中</span>
                 </div>
+                <!-- 主题切换 -->
+                <button 
+                    id="theme-toggle"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/40 text-xs transition-all border border-white/10 hover:border-white/30"
+                    title="切换主题"
+                >
+                    <svg id="theme-icon-dark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                    <svg id="theme-icon-light" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <span id="theme-text">深色</span>
+                </button>
                 <button 
                     id="clear-history-btn"
                     class="clear-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/40 text-xs transition-all border border-white/10 hover:border-red-500/30"
@@ -796,6 +855,37 @@
                 realtimeSubscription.unsubscribe();
             }
         });
+        
+        // 主题切换
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIconDark = document.getElementById('theme-icon-dark');
+        const themeIconLight = document.getElementById('theme-icon-light');
+        const themeText = document.getElementById('theme-text');
+        
+        // 从localStorage读取主题设置
+        let isLightTheme = localStorage.getItem('theme') === 'light';
+        
+        function applyTheme() {
+            if (isLightTheme) {
+                document.documentElement.classList.add('light-theme');
+                themeIconDark.classList.add('hidden');
+                themeIconLight.classList.remove('hidden');
+                themeText.textContent = '浅色';
+            } else {
+                document.documentElement.classList.remove('light-theme');
+                themeIconDark.classList.remove('hidden');
+                themeIconLight.classList.add('hidden');
+                themeText.textContent = '深色';
+            }
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            isLightTheme = !isLightTheme;
+            localStorage.setItem('theme', isLightTheme ? 'light' : 'dark');
+            applyTheme();
+        });
+        
+        applyTheme(); // 应用初始主题
     </script>
 </body>
 </html>

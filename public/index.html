@@ -421,7 +421,7 @@
             return sessionId;
         }
 
-        const sessionId = getSessionId();
+        let sessionId = getSessionId();
 
         // ==================== Supabase 操作 ====================
 
@@ -857,24 +857,23 @@
         // 清空历史按钮事件
         clearHistoryBtn.addEventListener('click', async () => {
             if (confirm('确定要清空所有对话历史吗？此操作不可恢复。')) {
-                // 先取消实时订阅，避免清空过程中收到旧消息
+                // 先取消实时订阅
                 if (realtimeSubscription) {
                     realtimeSubscription.unsubscribe();
                     realtimeSubscription = null;
                 }
                 
-                const result = await clearMessagesFromSupabase();
-                if (result.success) {
-                    messagesContainer.innerHTML = '';
-                    addWelcomeMessage();
-                    showError('历史记录已清空');
-                    // 重新订阅
-                    realtimeSubscription = subscribeToRealtimeMessages();
-                } else {
-                    showError('清空失败: ' + result.error);
-                    // 清空失败，重新订阅
-                    realtimeSubscription = subscribeToRealtimeMessages();
-                }
+                // 生成新的 sessionId，旧记录自然不会被加载
+                sessionId = 'session_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem(SESSION_KEY, sessionId);
+                
+                // 清空页面消息
+                messagesContainer.innerHTML = '';
+                addWelcomeMessage();
+                showError('历史记录已清空');
+                
+                // 重新订阅新 session
+                realtimeSubscription = subscribeToRealtimeMessages();
             }
         });
 

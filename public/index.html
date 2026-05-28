@@ -230,7 +230,7 @@
                 </div>
                 <div>
                     <h1 class="text-white font-semibold text-sm tracking-wide">ELITE CHAT</h1>
-                    <p class="text-white/40 text-xs">4位传奇人物在线 · DeepSeek驱动 · <span id="session-id-display" class="text-gray-500 text-[10px]"></span></p>
+                    <p class="text-white/40 text-xs">4位传奇人物在线</p>
                 </div>
             </div>
             
@@ -899,9 +899,6 @@
             // 显示欢迎消息作为 fallback
             addWelcomeMessage();
         }
-        
-        // 显示 sessionId 用于调试
-        document.getElementById('session-id-display').textContent = sessionId.slice(-8);
         
         messageInput.focus();
 

@@ -37,7 +37,7 @@ async function getCharacterResponse(systemPrompt, userMessage, characterId = nul
     body: JSON.stringify({
       model: 'deepseek-chat',
       messages: messages,
-      max_tokens: 500,
+      max_tokens: 2000,
       temperature: 0.8,
       stream: false
     })

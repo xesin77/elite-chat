@@ -729,13 +729,18 @@
         }
 
         // AI角色轮流回复
-        async function processAIResponses(userMessage) {
+        async function processAIResponses(userMessage, targetCharId = null) {
             isProcessing = true;
             sendBtn.disabled = true;
             
+            // 如果指定了目标角色，只回复那一个
+            const charsToRespond = targetCharId 
+                ? [targetCharId] 
+                : characterOrder;
+            
             const previousResponses = [];
             
-            for (const charId of characterOrder) {
+            for (const charId of charsToRespond) {
                 const character = characters[charId];
                 
                 // 显示打字指示器
@@ -770,6 +775,34 @@
             sendBtn.disabled = false;
             messageInput.focus();
         }
+        
+        // 检测用户是否@或叫了某个角色
+        function detectMentionedCharacter(message) {
+            const lowerMsg = message.toLowerCase();
+            
+            // 检测 @纳瓦尔, @Naval, 纳瓦尔 说, Naval 说 等
+            if (lowerMsg.includes('@纳瓦尔') || lowerMsg.includes('@naval') || 
+                lowerMsg.includes('纳瓦尔') || lowerMsg.includes('naval')) {
+                return 'naval';
+            }
+            // 检测 @乔布斯, @Jobs, 乔布斯 说 等
+            if (lowerMsg.includes('@乔布斯') || lowerMsg.includes('@jobs') || 
+                lowerMsg.includes('乔布斯') || lowerMsg.includes('jobs')) {
+                return 'jobs';
+            }
+            // 检测 @芒格, @Munger, 芒格 说 等
+            if (lowerMsg.includes('@芒格') || lowerMsg.includes('@munger') || 
+                lowerMsg.includes('芒格') || lowerMsg.includes('munger')) {
+                return 'munger';
+            }
+            // 检测 @马斯克, @Musk, 马斯克 说, Musk 说 等
+            if (lowerMsg.includes('@马斯克') || lowerMsg.includes('@musk') || 
+                lowerMsg.includes('马斯克') || lowerMsg.includes('musk')) {
+                return 'musk';
+            }
+            
+            return null; // 没有提到特定角色
+        }
 
         // 睡眠函数
         function sleep(ms) {
@@ -780,6 +813,10 @@
         async function sendMessage() {
             const text = messageInput.value.trim();
             if (!text || isProcessing) return;
+            
+            // 检测是否@了特定角色
+            const mentionedChar = detectMentionedCharacter(text);
+            const targetName = mentionedChar ? characters[mentionedChar].name : null;
             
             // 保存用户消息到 Supabase（实时订阅会自动渲染）
             await saveMessageToSupabase({
@@ -792,7 +829,13 @@
             scrollToBottom();
             
             // 触发AI回复
-            processAIResponses(text);
+            if (mentionedChar) {
+                // 如果提到了特定角色，只让那个人回复
+                processAIResponses(text, mentionedChar);
+            } else {
+                // 否则4个人都回复
+                processAIResponses(text);
+            }
         }
 
         // 事件监听

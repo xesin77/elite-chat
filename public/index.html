@@ -246,31 +246,26 @@
     </div>
 
     <!-- 顶部导航 -->
-    <header class="flex-none h-16 border-b border-white/5 bg-black/20 backdrop-blur-xl">
-        <div class="h-full px-6 flex items-center justify-between max-w-6xl mx-auto">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+    <header class="flex-none border-b border-white/5 bg-black/20 backdrop-blur-xl">
+        <div class="h-14 px-4 flex items-center justify-between max-w-6xl mx-auto">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/>
                     </svg>
                 </div>
                 <div>
                     <h1 class="text-white font-semibold text-sm tracking-wide">ELITE CHAT</h1>
-                    <p class="text-white/40 text-xs">4位传奇人物在线</p>
+                    <p class="text-white/40 text-[10px]">4位传奇人物在线</p>
                 </div>
             </div>
             
-            <!-- API状态指示 + 清空历史按钮 -->
-            <div class="flex items-center gap-4">
-                <!-- 同步状态 -->
-                <div id="sync-status" class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-blue-400 sync-indicator"></span>
-                    <span class="text-white/40 text-xs">云端同步中</span>
-                </div>
-                <!-- 主题切换 -->
+            <!-- 右侧：头像 + 操作按钮 -->
+            <div class="flex items-center gap-2">
+                <!-- 主题切换（只显示图标） -->
                 <button 
                     id="theme-toggle"
-                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/40 text-xs transition-all border border-white/10 hover:border-white/30"
+                    class="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 transition-all border border-white/10 hover:border-white/30 flex-shrink-0"
                     title="切换主题"
                 >
                     <svg id="theme-icon-dark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,35 +274,34 @@
                     <svg id="theme-icon-light" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
                     </svg>
-                    <span id="theme-text">深色</span>
                 </button>
+                <!-- 清空历史（只显示图标） -->
                 <button 
                     id="clear-history-btn"
-                    class="clear-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/40 text-xs transition-all border border-white/10 hover:border-red-500/30"
+                    class="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 transition-all border border-white/10 hover:border-red-500/30 flex-shrink-0"
                     title="清空对话历史"
                 >
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
-                    清空历史
                 </button>
-
-                <div class="flex -space-x-2">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                <!-- 角色头像组 -->
+                <div class="flex -space-x-1.5">
+                    <div class="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold border-2 border-[#0a0a0f] relative">
                         N
-                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-emerald-400"></span>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full border border-[#0a0a0f] online-pulse"></span>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                    <div class="w-7 h-7 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold border-2 border-[#0a0a0f] relative">
                         J
-                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-red-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-red-400"></span>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-red-400 rounded-full border border-[#0a0a0f] online-pulse"></span>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                    <div class="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white text-[10px] font-bold border-2 border-[#0a0a0f] relative">
                         M
-                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-amber-400"></span>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full border border-[#0a0a0f] online-pulse"></span>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white text-xs font-bold border-2 border-[#0a0a0f] relative">
+                    <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white text-[10px] font-bold border-2 border-[#0a0a0f] relative">
                         E
-                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-[#0a0a0f] online-pulse text-blue-400"></span>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-blue-400 rounded-full border border-[#0a0a0f] online-pulse"></span>
                     </div>
                 </div>
             </div>
@@ -374,7 +368,7 @@
                     </svg>
                 </button>
             </div>
-            <p class="text-white/20 text-xs mt-2 text-center">按 Enter 发送，Shift + Enter 换行</p>
+            <p class="text-white/20 text-xs mt-2 text-center hidden sm:block">按 Enter 发送，Shift + Enter 换行</p>
         </div>
     </footer>
 
@@ -439,7 +433,6 @@
         const errorToast = document.getElementById('error-toast');
         const errorMessage = document.getElementById('error-message');
         const clearHistoryBtn = document.getElementById('clear-history-btn');
-        const syncStatus = document.getElementById('sync-status');
 
         // ==================== 会话管理 ====================
 
@@ -953,7 +946,6 @@
         const themeToggle = document.getElementById('theme-toggle');
         const themeIconDark = document.getElementById('theme-icon-dark');
         const themeIconLight = document.getElementById('theme-icon-light');
-        const themeText = document.getElementById('theme-text');
         
         // 从localStorage读取主题设置
         let isLightTheme = localStorage.getItem('theme') === 'light';
@@ -963,12 +955,10 @@
                 document.documentElement.classList.add('light-theme');
                 themeIconDark.classList.add('hidden');
                 themeIconLight.classList.remove('hidden');
-                themeText.textContent = '浅色';
             } else {
                 document.documentElement.classList.remove('light-theme');
                 themeIconDark.classList.remove('hidden');
                 themeIconLight.classList.add('hidden');
-                themeText.textContent = '深色';
             }
         }
         
